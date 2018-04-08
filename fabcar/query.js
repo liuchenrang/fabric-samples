@@ -12,13 +12,28 @@ var Fabric_Client = require('fabric-client');
 var path = require('path');
 var util = require('util');
 var os = require('os');
+const fs = require('fs'); 
 
 //
 var fabric_client = new Fabric_Client();
-
+var options = {
+	"server_hostname":"peer0.org1.example.com",
+	"peerOrg1Host0":"grpcs://localhost:7051",
+	"tls_cacerts":"../first-network/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt",
+	"orderer_host" : "orderer.example.com",
+	"orderer_grpcs" : "grpcs://localhost:7050",
+	"orderer_tls_cacerts":"../first-network/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt",
+}
 // setup the fabric network
 var channel = fabric_client.newChannel('mychannel');
-var peer = fabric_client.newPeer('grpc://localhost:7051');
+let serverCert = fs.readFileSync(options.tls_cacerts);
+let peer = fabric_client.newPeer(
+		'grpcs://localhost:7051',
+		{
+			pem: Buffer.from(serverCert).toString(),
+			'ssl-target-name-override' : options.server_hostname
+		}
+);
 channel.addPeer(peer);
 
 //

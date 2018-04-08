@@ -12,15 +12,35 @@ var Fabric_Client = require('fabric-client');
 var path = require('path');
 var util = require('util');
 var os = require('os');
-
+const fs = require('fs'); 
 //
 var fabric_client = new Fabric_Client();
-
+var options = {
+	"event_url":"grpcs://localhost:7053",
+	"server_hostname":"peer0.org1.example.com",
+	"peerOrg1Host0":"grpcs://localhost:7051",
+	"peer_tls_cacerts":"../first-network/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt",
+	"orderer_host" : "orderer.example.com",
+	"orderer_grpcs" : "grpcs://localhost:7050",
+	"orderer_tls_cacerts":"../first-network/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt",
+}
 // setup the fabric network
 var channel = fabric_client.newChannel('mychannel');
-var peer = fabric_client.newPeer('grpc://localhost:7051');
+let data = fs.readFileSync(options.peer_tls_cacerts); 
+    let peer = fabric_client.newPeer(options.peerOrg1Host0, 
+         { 
+            pem: Buffer.from(data).toString(), 
+             'ssl-target-name-override': options.server_hostname 
+        } 
+    ); 
 channel.addPeer(peer);
-var order = fabric_client.newOrderer('grpc://localhost:7050')
+let odata = fs.readFileSync(options.orderer_tls_cacerts); 
+let caroots = Buffer.from(odata).toString(); 
+var order = fabric_client.newOrderer(options.orderer_grpcs, { 
+	'pem': caroots, 
+	'ssl-target-name-override': options.orderer_host
+}); 
+ 
 channel.addOrderer(order);
 
 //
@@ -103,8 +123,16 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
 
 		// get an eventhub once the fabric client has a user assigned. The user
 		// is required bacause the event registration must be signed
-		let event_hub = fabric_client.newEventHub();
-		event_hub.setPeerAddr('grpc://localhost:7053');
+
+		var event_hub = fabric_client.newEventHub();
+        var data = fs.readFileSync(options.peer_tls_cacerts);
+        var grpcOpts = {
+            pem : Buffer.from(data).toString(),
+            'ssl-target-name-override' : options.server_hostname
+        };
+        
+        event_hub.setPeerAddr(options.event_url, grpcOpts);
+        event_hub.connect();
 
 		// using resolve the promise so that result status may be processed
 		// under the then clause rather than having the catch clause process
