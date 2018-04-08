@@ -127,7 +127,7 @@ Fabric_Client.newDefaultKeyValueStore({ path: store_path
 		var event_hub = fabric_client.newEventHub();
         var data = fs.readFileSync(options.peer_tls_cacerts);
         var grpcOpts = {
-            pem : Buffer.from(data).toString(),
+            'pem' : Buffer.from(data).toString(),
             'ssl-target-name-override' : options.server_hostname
         };
         
